@@ -194,7 +194,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
           height: 108,
           decoration: BoxDecoration(
             color: selected ? AppColors.pale : Colors.white,

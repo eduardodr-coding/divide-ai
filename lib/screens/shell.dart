@@ -45,7 +45,25 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _index, children: _pages),
+      // Troca de aba com fade + leve deslocamento.
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 280),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+                    begin: const Offset(0, 0.02), end: Offset.zero)
+                .animate(animation),
+            child: child,
+          ),
+        ),
+        child: KeyedSubtree(
+          key: ValueKey(_index),
+          child: _pages[_index],
+        ),
+      ),
       bottomNavigationBar: AppBottomNav(
         current: _index,
         onSelect: (i) => setState(() => _index = i),

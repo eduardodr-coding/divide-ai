@@ -20,6 +20,36 @@ class AppColors {
   static const bar = Color(0xFF4E9A4B);
 }
 
+/// Transição entre telas: a nova tela surge com fade e sobe suavemente,
+/// enquanto a anterior recua um pouco.
+class AppPageTransitions extends PageTransitionsBuilder {
+  const AppPageTransitions();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final enter = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+    final exit =
+        CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeInOut);
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0, end: 1).animate(enter),
+      child: SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero)
+            .animate(enter),
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 1, end: 0.97).animate(exit),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
 ThemeData buildTheme() {
   final base = ThemeData(
     useMaterial3: true,
@@ -30,6 +60,14 @@ ThemeData buildTheme() {
       secondary: AppColors.orange,
     ),
     scaffoldBackgroundColor: AppColors.cream,
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: AppPageTransitions(),
+      TargetPlatform.iOS: AppPageTransitions(),
+      TargetPlatform.windows: AppPageTransitions(),
+      TargetPlatform.macOS: AppPageTransitions(),
+      TargetPlatform.linux: AppPageTransitions(),
+      TargetPlatform.fuchsia: AppPageTransitions(),
+    }),
   );
   return base.copyWith(
     textTheme: base.textTheme.apply(

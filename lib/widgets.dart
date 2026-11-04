@@ -449,7 +449,7 @@ class _AppFieldState extends State<AppField> {
                   onTap: widget.onTap,
                   style: const TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.ink),
                   decoration: InputDecoration.collapsed(
                     hintText: widget.hint,
@@ -546,10 +546,12 @@ class AppTag extends StatelessWidget {
       height: height,
       width: width,
       alignment: Alignment.center,
-      padding: EdgeInsets.symmetric(horizontal: hPad),
+      padding: EdgeInsets.symmetric(horizontal: width != null ? 0 : hPad),
       decoration:
           BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
       child: Text(text,
+          maxLines: 1,
+          softWrap: false,
           style: TextStyle(
               color: fg, fontSize: fontSize, fontWeight: FontWeight.w700)),
     );
@@ -684,6 +686,7 @@ class _DashedPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
+    canvas.drawRRect(rrect, Paint()..color = Colors.white);
     final path = Path()..addRRect(rrect);
     for (final m in path.computeMetrics()) {
       var d = 0.0;
