@@ -98,13 +98,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                SizedBox(
+                const SizedBox(
                   height: 106,
                   child: AppCard(
                     padding: EdgeInsets.zero,
                     child: Stack(
                       children: [
-                        const Positioned(
+                        Positioned(
                           left: 19,
                           top: 11.5,
                           child: Text('320 kg',
@@ -114,7 +114,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primary)),
                         ),
-                        const Positioned(
+                        Positioned(
                           right: 19,
                           top: 21.5,
                           child: AppTag('+18% vs. jul',
@@ -124,7 +124,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               fontSize: 11.5,
                               hPad: 0),
                         ),
-                        const Positioned(
+                        Positioned(
                           left: 19,
                           top: 62.4,
                           child: Text('de alimentos resgatados em agosto',
@@ -133,7 +133,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   height: 1.3,
                                   color: AppColors.muted)),
                         ),
-                        const Positioned(
+                        Positioned(
                           left: 19,
                           top: 81,
                           child: Text('Equivale a 480 refeições',
@@ -183,7 +183,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   fontSize: 12,
                                   height: 1.3,
                                   fontWeight: FontWeight.w800,
-                                  color: AppColors.ink)),
+                                  color: AppColors.primary)),
                         ),
                         _grid(50.5),
                         _grid(103.5),
@@ -220,7 +220,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                         ? FontWeight.w800
                                         : FontWeight.w400,
                                     color: i == _months.length - 1
-                                        ? AppColors.ink
+                                        ? AppColors.primary
                                         : AppColors.muted)),
                           ),
                         ],
@@ -511,7 +511,7 @@ class ProfileScreen extends StatelessWidget {
                 child: const CircleAvatar(
                   radius: 34,
                   backgroundColor: AppColors.light,
-                  child: Icon(Icons.person_outline,
+                  child: AppIcon(Icons.person_outline,
                       size: 36, color: AppColors.green),
                 ),
               ),
@@ -526,7 +526,7 @@ class ProfileScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.primary, width: 2),
                   ),
-                  child: const Icon(Icons.camera_alt_outlined,
+                  child: const AppIcon(Icons.camera_alt_outlined,
                       size: 12, color: Colors.white),
                 ),
               ),
@@ -576,13 +576,13 @@ class ProfileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
+              const SizedBox(
                 height: 66,
                 child: AppCard(
                   color: AppColors.orangeTint,
                   bordered: false,
                   padding: EdgeInsets.zero,
-                  child: const Stack(
+                  child: Stack(
                     children: [
                       Positioned(
                         left: 15,
@@ -616,7 +616,7 @@ class ProfileScreen extends StatelessWidget {
                       Positioned(
                         right: 8,
                         top: 22,
-                        child: Icon(Icons.chevron_right,
+                        child: AppIcon(Icons.chevron_right,
                             size: 22, color: AppColors.orange),
                       ),
                     ],
@@ -666,7 +666,7 @@ class ProfileScreen extends StatelessWidget {
                         Positioned(
                           right: 11,
                           top: i * 54.0 + 15,
-                          child: const Icon(Icons.chevron_right,
+                          child: const AppIcon(Icons.chevron_right,
                               size: 22, color: AppColors.muted),
                         ),
                         if (i < _items.length - 1)
@@ -689,7 +689,7 @@ class ProfileScreen extends StatelessWidget {
                   onPressed: () => Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(builder: (_) => const LoginScreen()),
                       (_) => false),
-                  icon: const Icon(Icons.logout, size: 20),
+                  icon: const AppIcon(Icons.logout, size: 20),
                   label: const Text('Sair da conta',
                       style:
                           TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),

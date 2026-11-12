@@ -73,7 +73,7 @@ class HomeScreen extends StatelessWidget {
               Positioned(
                 left: 131,
                 top: 67,
-                child: Icon(Icons.chevron_right, color: chevron, size: 22),
+                child: AppIcon(Icons.chevron_right, color: chevron, size: 22),
               ),
             ],
           ),
@@ -124,7 +124,7 @@ class HomeScreen extends StatelessWidget {
                   clipBehavior: Clip.none,
                   children: [
                     RoundIconButton(
-                        icon: Icons.notifications_none, size: 42, iconSize: 22),
+                        icon: Icons.notifications_none, size: 42, iconSize: AppDimensions.iconSm),
                     Positioned(
                       right: 7,
                       top: 6,
@@ -239,11 +239,11 @@ class HomeScreen extends StatelessWidget {
                 child: AppCard(
                   padding: EdgeInsets.zero,
                   onTap: () => _go(context, const DonationDetailScreen()),
-                  child: Stack(
+                  child: const Stack(
                     children: [
-                      const Positioned(
+                      Positioned(
                           left: 15, top: 15, child: FoodThumb(size: 56)),
-                      const Positioned(
+                      Positioned(
                         left: 85,
                         top: 20.5,
                         child: Text('Cesta de hortaliças',
@@ -253,7 +253,7 @@ class HomeScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.ink)),
                       ),
-                      const Positioned(
+                      Positioned(
                         left: 85,
                         top: 40.8,
                         child: Text('Hortifruti Bom Preço · 1,2 km',
@@ -262,7 +262,7 @@ class HomeScreen extends StatelessWidget {
                                 height: 1.3,
                                 color: AppColors.muted)),
                       ),
-                      const Positioned(
+                      Positioned(
                         left: 85,
                         top: 60,
                         child: Row(children: [

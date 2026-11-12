@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'theme.dart';
 
@@ -12,81 +13,69 @@ double statusInset(BuildContext context) =>
 const IconData kCubeIcon = Icons.view_in_ar_outlined;
 const IconData kTrendIcon = Icons.insights;
 
+/// SVG exportado do Figma (assets/icons). [stroke] é a espessura do traço
+/// no arquivo: os ícones foram desenhados numa grade de 24 e exportados no
+/// tamanho nominal `12 * stroke`, o que permite escalá-los como um [Icon].
+class _FigmaIcon {
+  final String name;
+  final double width, height, stroke;
+  const _FigmaIcon(this.name, this.width, this.height, this.stroke);
+}
+
+/// Ícones do app que têm o desenho original exportado do Figma.
+/// Os demais continuam no Material até serem exportados (ver README).
+final Map<IconData, _FigmaIcon> _figmaIcons = {
+  Icons.person_outline: const _FigmaIcon('user', 15.1259, 16.1341, 1.55839),
+  Icons.visibility_outlined: const _FigmaIcon('eye', 19.159, 12.1921, 1.55839),
+  Icons.notifications_none: const _FigmaIcon('bell', 14.3922, 17.3256, 1.55839),
+  Icons.card_giftcard_outlined: const _FigmaIcon('gift', 17.1423, 17.0191, 1.55839),
+  kCubeIcon: const _FigmaIcon('box', 16.9593, 17.6923, 1.55839),
+  Icons.shopping_bag_outlined: const _FigmaIcon('bag-heart', 17.1084, 19.7, 1.7),
+  Icons.assignment_outlined: const _FigmaIcon('clipboard', 14.7, 19.9, 1.7),
+  Icons.add: const _FigmaIcon('plus', 22.6, 22.6, 2.6),
+  Icons.chevron_left: const _FigmaIcon('chevron-left', 7.70028, 13.5672, 1.8334),
+  Icons.chevron_right: const _FigmaIcon('chevron-right', 7.8, 13.8, 1.8),
+  Icons.people_outline: const _FigmaIcon('users', 18.6094, 15.3091, 1.55839),
+  Icons.workspace_premium_outlined: const _FigmaIcon('award', 12.9, 19.3, 1.7),
+  kTrendIcon: const _FigmaIcon('trend', 17.7, 14.7, 1.7),
+  Icons.home_outlined: const _FigmaIcon('home', 16.9589, 15.8589, 1.55839),
+  Icons.favorite_border: const _FigmaIcon('heart', 17.3256, 17.0506, 1.55839),
+  Icons.chat_bubble_outline: const _FigmaIcon('message', 16.2256, 15.3089, 1.55839),
+};
+
+/// Desenha um ícone do app: o SVG do Figma quando existe, senão o Material.
+/// [size] segue a convenção do [Icon] (caixa da grade de 24).
 Widget appIcon(IconData icon, {required double size, required Color color}) {
-  if (icon == kCubeIcon || icon == kTrendIcon) {
-    // Align impede que um pai com restrição "tight" estique o desenho.
-    return Align(
-      widthFactor: 1,
-      heightFactor: 1,
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: CustomPaint(painter: _GlyphPainter(icon == kCubeIcon, color)),
+  final svg = _figmaIcons[icon];
+  if (svg != null) {
+    final k = size / (12 * svg.stroke);
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Center(
+        child: SvgPicture.asset(
+          'assets/icons/${svg.name}.svg',
+          width: svg.width * k,
+          height: svg.height * k,
+          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+        ),
       ),
     );
   }
   return Icon(icon, size: size, color: color);
 }
 
-class _GlyphPainter extends CustomPainter {
-  final bool cube;
+/// Atalho para usar [appIcon] onde antes havia um [Icon].
+class AppIcon extends StatelessWidget {
+  final IconData icon;
+  final double size;
   final Color color;
-  _GlyphPainter(this.cube, this.color);
+  const AppIcon(this.icon,
+      {super.key, this.size = 24, this.color = AppColors.primary});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final s = size.width / 24;
-    canvas.scale(s);
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = cube ? 2.0 : 1.9
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    if (cube) {
-      final hex = Path()
-        ..moveTo(12, 2.5)
-        ..lineTo(20.5, 7.3)
-        ..lineTo(20.5, 16.7)
-        ..lineTo(12, 21.5)
-        ..lineTo(3.5, 16.7)
-        ..lineTo(3.5, 7.3)
-        ..close();
-      canvas.drawPath(hex, paint);
-      canvas.drawPath(
-          Path()
-            ..moveTo(3.5, 7.3)
-            ..lineTo(12, 12)
-            ..lineTo(20.5, 7.3)
-            ..moveTo(12, 12)
-            ..lineTo(12, 21.5),
-          paint);
-    } else {
-      // barras crescentes + seta
-      canvas.drawLine(const Offset(3.5, 21), const Offset(20.5, 21), paint);
-      for (final b in const [
-        [6.0, 15.5],
-        [11.0, 12.5],
-        [16.0, 15.5],
-      ]) {
-        canvas.drawLine(Offset(b[0], 21), Offset(b[0], b[1]), paint);
-      }
-      canvas.drawPath(
-          Path()
-            ..moveTo(4, 11)
-            ..lineTo(10, 6.5)
-            ..lineTo(13.5, 9)
-            ..lineTo(20, 3.5)
-            ..moveTo(15.5, 3.5)
-            ..lineTo(20, 3.5)
-            ..lineTo(20, 8),
-          paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _GlyphPainter old) =>
-      old.cube != cube || old.color != color;
+  Widget build(BuildContext context) =>
+      appIcon(icon, size: size, color: color);
 }
 
 /// Botão circular usado nos cabeçalhos verdes.
@@ -119,7 +108,7 @@ class RoundIconButton extends StatelessWidget {
         child: SizedBox(
           width: size,
           height: size,
-          child: Icon(icon, color: fg, size: iconSize),
+          child: Center(child: appIcon(icon, color: fg, size: iconSize)),
         ),
       ),
     );
@@ -167,7 +156,7 @@ class AppHeader extends StatelessWidget {
               top: center - 19,
               child: RoundIconButton(
                 icon: Icons.chevron_left,
-                iconSize: 26,
+                iconSize: 22, // chevron-left.svg: traço 1.83 -> nominal 22
                 onTap: () => Navigator.maybePop(context),
               ),
             ),
@@ -288,6 +277,9 @@ class PrimaryButton extends StatelessWidget {
   /// Desloca o conteúdo para a direita (o Figma tem um botão descentralizado).
   final double shift;
 
+  /// Mostra um indicador no lugar do texto e ignora toques.
+  final bool loading;
+
   const PrimaryButton({
     super.key,
     required this.label,
@@ -295,6 +287,7 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.height = 56,
     this.shift = 0,
+    this.loading = false,
   });
 
   @override
@@ -303,16 +296,19 @@ class PrimaryButton extends StatelessWidget {
       width: double.infinity,
       height: height,
       child: FilledButton(
-        onPressed: onPressed,
+        onPressed: loading ? () {} : onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           disabledBackgroundColor: AppColors.primary,
           disabledForegroundColor: Colors.white,
           padding: EdgeInsets.only(left: shift * 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.button)),
         ),
-        child: Row(
+        child: loading
+            ? const AppLoading(color: Colors.white)
+            : Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (icon != null) ...[
@@ -371,6 +367,12 @@ class AppField extends StatefulWidget {
   final double iconLeft;
   final double iconSize;
   final double? textLeft;
+  final TextEditingController? controller;
+  final ValueChanged<String>? onChanged;
+  final TextInputAction? action;
+
+  /// Mensagem de erro de validação (mostrada abaixo do campo).
+  final String? errorText;
 
   const AppField({
     super.key,
@@ -387,7 +389,12 @@ class AppField extends StatefulWidget {
     this.iconLeft = 18,
     this.iconSize = 18,
     this.textLeft,
-  });
+    this.controller,
+    this.onChanged,
+    this.action,
+    this.errorText,
+  }) : assert(initial == null || controller == null,
+            'use initial ou controller, não os dois');
 
   @override
   State<AppField> createState() => _AppFieldState();
@@ -399,15 +406,22 @@ class _AppFieldState extends State<AppField> {
   @override
   Widget build(BuildContext context) {
     final hasIcon = widget.icon != null;
+    final hasError = widget.errorText != null;
     final textLeft = widget.textLeft ?? (hasIcon ? 46.0 : 18.0);
     Widget? suffix = widget.suffix;
     if (widget.password) {
-      suffix = GestureDetector(
-        onTap: () => setState(() => _hidden = !_hidden),
-        child: Icon(
-            _hidden ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-            size: 20,
-            color: AppColors.muted),
+      suffix = Semantics(
+        button: true,
+        label: _hidden ? 'Mostrar senha' : 'Ocultar senha',
+        child: GestureDetector(
+          onTap: () => setState(() => _hidden = !_hidden),
+          child: appIcon(
+              _hidden
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+              size: 18.7,
+              color: AppColors.muted),
+        ),
       );
     }
     return Column(
@@ -423,26 +437,35 @@ class _AppFieldState extends State<AppField> {
                   color: AppColors.primary)),
         ),
         const SizedBox(height: 8),
-        Container(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
           height: widget.height,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.light),
+            borderRadius: BorderRadius.circular(AppRadius.field),
+            border: Border.all(
+                color: hasError ? AppColors.red : AppColors.light,
+                width: hasError ? 1.5 : 1),
           ),
           child: Row(
             children: [
-              SizedBox(width: widget.iconLeft),
+              // O texto começa em [textLeft] (medido no Figma); o ícone fica
+              // em [iconLeft]. Sem ícone, o recuo é o próprio textLeft.
               if (hasIcon) ...[
+                SizedBox(width: widget.iconLeft),
                 appIcon(widget.icon!,
                     size: widget.iconSize, color: AppColors.green),
                 SizedBox(
-                    width: textLeft - widget.iconLeft - widget.iconSize - 1),
+                    width: math.max(
+                        0, textLeft - widget.iconLeft - widget.iconSize - 1)),
               ] else
-                SizedBox(width: textLeft - widget.iconLeft - 1),
+                SizedBox(width: math.max(0, textLeft - 1)),
               Expanded(
                 child: TextFormField(
                   initialValue: widget.initial,
+                  controller: widget.controller,
+                  onChanged: widget.onChanged,
+                  textInputAction: widget.action,
                   obscureText: widget.password && _hidden,
                   keyboardType: widget.keyboard,
                   readOnly: widget.readOnly,
@@ -464,6 +487,12 @@ class _AppFieldState extends State<AppField> {
             ],
           ),
         ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4),
+            child: Text(widget.errorText!,
+                style: AppTypography.caption.copyWith(color: AppColors.red)),
+          ),
       ],
     );
   }
@@ -473,7 +502,9 @@ class _AppFieldState extends State<AppField> {
 class SearchBox extends StatelessWidget {
   final String hint;
   final double height;
-  const SearchBox({super.key, required this.hint, this.height = 50});
+  final ValueChanged<String>? onChanged;
+  const SearchBox(
+      {super.key, required this.hint, this.height = 50, this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -487,10 +518,12 @@ class SearchBox extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.search, size: 22, color: AppColors.muted),
+          const AppIcon(Icons.search, size: 22, color: AppColors.muted),
           const SizedBox(width: 14),
           Expanded(
             child: TextField(
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
               style: const TextStyle(fontSize: 14, color: AppColors.ink),
               decoration: InputDecoration.collapsed(
                 hintText: hint,
@@ -718,22 +751,27 @@ class AppBottomNav extends StatelessWidget {
   Widget _item(int i, IconData icon, String label) {
     final active = current == i;
     final color = active ? AppColors.primary : AppColors.muted;
+    // Figma (tab-bar): ícone 18.7 com centro a 34 do topo da barra,
+    // rótulo Inter 10 (Bold quando ativo, Regular quando inativo) em y=50.
     return Expanded(
-      child: InkWell(
-        onTap: () => onSelect(i),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 20),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(height: 4),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 10.5,
-                      height: 1.3,
-                      color: color,
-                      fontWeight: active ? FontWeight.w800 : FontWeight.w500)),
-            ],
+      child: Semantics(
+        selected: active,
+        button: true,
+        child: InkWell(
+          onTap: () => onSelect(i),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 25),
+            child: Column(
+              children: [
+                appIcon(icon, color: color, size: AppDimensions.iconSm),
+                const SizedBox(height: 6.5),
+                Text(label,
+                    style: AppTypography.navLabel.copyWith(
+                        color: color,
+                        fontWeight:
+                            active ? FontWeight.w700 : FontWeight.w400)),
+              ],
+            ),
           ),
         ),
       ),
@@ -768,29 +806,34 @@ class AppBottomNav extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: -12.75,
+            // fab-sombra (58, creme) a 11 acima da barra; fab-bg (50, verde).
+            top: -11,
             left: 0,
             right: 0,
             child: Center(
-              child: GestureDetector(
+              child: Semantics(
+                button: true,
+                label: 'Nova doação',
+                child: GestureDetector(
                 onTap: onAdd,
                 child: Container(
-                  width: 60,
-                  height: 60,
+                  width: 58,
+                  height: 58,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.cream,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.border),
                   ),
                   child: Container(
                     width: 50,
                     height: 50,
                     decoration: const BoxDecoration(
                         color: AppColors.green, shape: BoxShape.circle),
-                    child: const Icon(Icons.add, color: Colors.white, size: 30),
+                    // plus.svg do Figma: traço 2.6 -> tamanho nominal 31.2
+                    child: appIcon(Icons.add, color: Colors.white, size: 31.2),
                   ),
                 ),
+              ),
               ),
             ),
           ),
@@ -802,6 +845,275 @@ class AppBottomNav extends StatelessWidget {
               child: IgnorePointer(child: Center(child: HomeIndicator())),
             ),
         ],
+      ),
+    );
+  }
+}
+
+// ------------------------------------------------- estados e sobreposições
+
+/// Chip de filtro (Figma: "Todos", "Hortifruti"... em Quero receber).
+class AppChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+  final double? width;
+  final double height;
+
+  const AppChip({
+    super.key,
+    required this.label,
+    this.selected = false,
+    this.onTap,
+    this.width,
+    this.height = 34,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: width,
+          height: height,
+          padding: width == null
+              ? const EdgeInsets.symmetric(horizontal: AppSpacing.lg)
+              : null,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(height / 2),
+            border: Border.all(
+                color: selected ? AppColors.primary : AppColors.light),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : AppColors.primary)),
+        ),
+      ),
+    );
+  }
+}
+
+/// Indicador de carregamento na cor da marca.
+class AppLoading extends StatelessWidget {
+  final double size;
+  final Color color;
+  const AppLoading({super.key, this.size = 22, this.color = AppColors.primary});
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: size,
+        height: size,
+        child: CircularProgressIndicator(strokeWidth: 2.4, color: color),
+      );
+}
+
+/// Mensagem centralizada para listas vazias ou erros.
+class AppStateMessage extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? action;
+  final VoidCallback? onAction;
+  final bool error;
+
+  const AppStateMessage({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+    this.onAction,
+    this.error = false,
+  });
+
+  /// Estado vazio (ex.: busca sem resultados).
+  const AppStateMessage.empty({
+    super.key,
+    required this.title,
+    required this.message,
+    this.action,
+    this.onAction,
+  })  : icon = kCubeIcon,
+        error = false;
+
+  /// Estado de erro (ex.: falha ao carregar).
+  const AppStateMessage.error({
+    super.key,
+    this.title = 'Algo deu errado',
+    this.message = 'Verifique sua conexão e tente de novo.',
+    this.action = 'Tentar de novo',
+    this.onAction,
+  })  : icon = Icons.error_outline,
+        error = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = error ? AppColors.red : AppColors.primary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconCircle(
+              icon: icon,
+              size: 64,
+              iconSize: 30,
+              bg: error ? AppColors.redTint : AppColors.pale,
+              fg: fg),
+          const SizedBox(height: AppSpacing.lg),
+          Text(title,
+              textAlign: TextAlign.center,
+              style: AppTypography.cardTitle.copyWith(color: fg)),
+          const SizedBox(height: AppSpacing.xs),
+          Text(message,
+              textAlign: TextAlign.center,
+              style: AppTypography.caption.copyWith(height: 1.4)),
+          if (action != null) ...[
+            const SizedBox(height: AppSpacing.lg),
+            TextButton(
+              onPressed: onAction,
+              child: Text(action!, style: AppTypography.link),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Aviso rápido no rodapé.
+void showAppSnack(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(
+      content: Text(message,
+          style: const TextStyle(fontWeight: FontWeight.w600)),
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: AppColors.ink,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.field)),
+    ));
+}
+
+/// Diálogo de confirmação no estilo do app. Retorna true se confirmado.
+Future<bool> showAppDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+  String confirm = 'Confirmar',
+  String cancel = 'Cancelar',
+}) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.cardLarge)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: AppTypography.section),
+            const SizedBox(height: AppSpacing.sm),
+            Text(message,
+                style: AppTypography.caption
+                    .copyWith(fontSize: 13, height: 1.4)),
+            const SizedBox(height: AppSpacing.xl),
+            PrimaryButton(
+                label: confirm,
+                height: 48,
+                onPressed: () => Navigator.pop(context, true)),
+            const SizedBox(height: AppSpacing.sm),
+            OutlineAppButton(
+                label: cancel,
+                height: 48,
+                onPressed: () => Navigator.pop(context, false)),
+          ],
+        ),
+      ),
+    ),
+  );
+  return ok ?? false;
+}
+
+/// Folha inferior com alça e título, no estilo dos cards do app.
+Future<T?> showAppSheet<T>(
+  BuildContext context, {
+  required String title,
+  required WidgetBuilder builder,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.cream,
+    shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppRadius.sheet))),
+    builder: (context) => Padding(
+      padding: EdgeInsets.fromLTRB(AppSpacing.screen, 12, AppSpacing.screen,
+          24 + MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: AppColors.light,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(title, style: AppTypography.section),
+          const SizedBox(height: AppSpacing.md),
+          builder(context),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Opção selecionável dentro de uma folha inferior.
+class AppSheetOption extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const AppSheetOption(
+      {super.key,
+      required this.label,
+      required this.selected,
+      required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: AppCard(
+        onTap: onTap,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+                child: Text(label,
+                    style: AppTypography.cardTitle.copyWith(
+                        color: selected ? AppColors.primary : AppColors.ink))),
+            if (selected)
+              const AppIcon(Icons.check_circle,
+                  size: 20, color: AppColors.primary),
+          ],
+        ),
       ),
     );
   }

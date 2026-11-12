@@ -98,9 +98,9 @@ class _DonateScreenState extends State<DonateScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(24, 17, 24, 40),
                 children: [
-                  DashedBox(
+                  const DashedBox(
                     height: 120,
-                    child: const Stack(
+                    child: Stack(
                       children: [
                         Positioned(
                           top: 23,
@@ -159,7 +159,7 @@ class _DonateScreenState extends State<DonateScreen> {
                             label: 'Validade',
                             initial: '20/08/2026',
                             textLeft: 19,
-                            suffix: Icon(Icons.calendar_today_outlined,
+                            suffix: AppIcon(Icons.calendar_today_outlined,
                                 size: 18, color: AppColors.muted)),
                       ),
                     ],
@@ -199,7 +199,7 @@ class _DonateScreenState extends State<DonateScreen> {
                                 width: 2),
                           ),
                           child: _confirmed
-                              ? const Icon(Icons.check,
+                              ? const AppIcon(Icons.check,
                                   size: 14, color: Colors.white)
                               : null,
                         ),
@@ -422,10 +422,87 @@ class ReceiveScreen extends StatefulWidget {
 class _ReceiveScreenState extends State<ReceiveScreen> {
   static const _filters = ['Todos', 'Hortifruti', 'Padaria', 'Frios'];
   static const _widths = [64.0, 100.5, 79.5, 64.5];
+  static const _sorts = [
+    'Mais próximas primeiro',
+    'Vencem antes primeiro',
+    'Maior quantidade primeiro',
+  ];
   int _filter = 0;
+  int _sort = 0;
+  String _query = '';
+
+  List<Donation> get _results {
+    final q = normalize(_query.trim());
+    final list = nearbyDonations.where((d) {
+      if (_filter > 0 && d.category != _filters[_filter]) return false;
+      if (q.isEmpty) return true;
+      return normalize('${d.title} ${d.place}').contains(q);
+    }).toList();
+    // Desempate pela ordem original, para a ordenação ser estável.
+    int byIndex(Donation a, Donation b) =>
+        nearbyDonations.indexOf(a).compareTo(nearbyDonations.indexOf(b));
+    int Function(Donation, Donation) by(num Function(Donation) key,
+            {bool desc = false}) =>
+        (a, b) {
+          final c = desc ? key(b).compareTo(key(a)) : key(a).compareTo(key(b));
+          return c != 0 ? c : byIndex(a, b);
+        };
+    switch (_sort) {
+      case 1:
+        list.sort(by((d) => d.daysLeft));
+      case 2:
+        list.sort(by((d) => d.kg, desc: true));
+      default:
+        list.sort(by((d) => d.km));
+    }
+    return list;
+  }
+
+  String get _sortLabel => const [
+        'mais próximas primeiro',
+        'vencem antes primeiro',
+        'maior quantidade primeiro',
+      ][_sort];
+
+  Future<void> _chooseSort() async {
+    final i = await showAppSheet<int>(
+      context,
+      title: 'Ordenar doações',
+      builder: (context) => Column(
+        children: [
+          for (var i = 0; i < _sorts.length; i++)
+            AppSheetOption(
+              label: _sorts[i],
+              selected: i == _sort,
+              onTap: () => Navigator.pop(context, i),
+            ),
+        ],
+      ),
+    );
+    if (i != null) setState(() => _sort = i);
+  }
+
+  Future<void> _chooseCategory() async {
+    final i = await showAppSheet<int>(
+      context,
+      title: 'Filtrar por categoria',
+      builder: (context) => Column(
+        children: [
+          for (var i = 0; i < _filters.length; i++)
+            AppSheetOption(
+              label: _filters[i],
+              selected: i == _filter,
+              onTap: () => Navigator.pop(context, i),
+            ),
+        ],
+      ),
+    );
+    if (i != null) setState(() => _filter = i);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final results = _results;
     return Scaffold(
       bottomNavigationBar: navFor(context, 0),
       body: Column(
@@ -437,17 +514,28 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
               children: [
                 Row(
                   children: [
-                    const Expanded(
-                        child: SearchBox(hint: 'Buscar alimento ou doador')),
+                    Expanded(
+                        child: SearchBox(
+                            hint: 'Buscar alimento ou doador',
+                            onChanged: (v) => setState(() => _query = v))),
                     const SizedBox(width: 10),
-                    Container(
-                      width: 46,
-                      height: 50,
-                      decoration: BoxDecoration(
-                          color: AppColors.green,
-                          borderRadius: BorderRadius.circular(14)),
-                      child: const Icon(Icons.filter_list,
-                          color: Colors.white, size: 24),
+                    Semantics(
+                      button: true,
+                      label: 'Filtrar por categoria',
+                      child: Material(
+                        color: AppColors.green,
+                        borderRadius: BorderRadius.circular(14),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: _chooseCategory,
+                          child: const SizedBox(
+                            width: 46,
+                            height: 50,
+                            child: AppIcon(Icons.filter_list,
+                                color: Colors.white, size: 24),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -458,56 +546,59 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
                     children: [
                       for (var i = 0; i < _filters.length; i++) ...[
                         if (i > 0) const SizedBox(width: 9.5),
-                        GestureDetector(
+                        AppChip(
+                          label: _filters[i],
+                          width: _widths[i],
+                          selected: i == _filter,
                           onTap: () => setState(() => _filter = i),
-                          child: Container(
-                            width: _widths[i],
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: i == _filter
-                                  ? AppColors.primary
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(17),
-                              border: Border.all(
-                                  color: i == _filter
-                                      ? AppColors.primary
-                                      : AppColors.light),
-                            ),
-                            child: Text(_filters[i],
-                                style: TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: i == _filter
-                                        ? Colors.white
-                                        : AppColors.primary)),
-                          ),
                         ),
                       ],
                     ],
                   ),
                 ),
                 const SizedBox(height: 23.5),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('18 doações · mais próximas primeiro',
-                        style: TextStyle(
-                            fontSize: 12, height: 1.33, color: AppColors.muted)),
-                    Row(children: [
-                      Text('Ordenar',
-                          style: TextStyle(
+                    Expanded(
+                      child: Text(
+                          '${results.length} '
+                          '${results.length == 1 ? 'doação' : 'doações'} · '
+                          '$_sortLabel',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
                               fontSize: 12,
                               height: 1.33,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary)),
-                      SizedBox(width: 3),
-                      Icon(Icons.keyboard_arrow_down,
-                          size: 18, color: AppColors.primary),
-                    ]),
+                              color: AppColors.muted)),
+                    ),
+                    GestureDetector(
+                      onTap: _chooseSort,
+                      child: const Row(children: [
+                        Text('Ordenar',
+                            style: TextStyle(
+                                fontSize: 12,
+                                height: 1.33,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary)),
+                        SizedBox(width: 3),
+                        AppIcon(Icons.keyboard_arrow_down,
+                            size: 18, color: AppColors.primary),
+                      ]),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12.5),
-                for (final d in nearbyDonations)
+                if (results.isEmpty)
+                  AppStateMessage.empty(
+                    title: 'Nenhuma doação encontrada',
+                    message: 'Tente outro termo ou limpe os filtros.',
+                    action: 'Limpar filtros',
+                    onAction: () => setState(() {
+                      _filter = 0;
+                      _sort = 0;
+                    }),
+                  ),
+                for (final d in results)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: _DonationTile(
@@ -515,7 +606,8 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
                       title: d.title,
                       sub: '${d.place} · ${d.distance}',
                       tag: AppTag(d.expiry, kind: d.expiryKind),
-                      onTap: () => _push(context, const DonationDetailScreen()),
+                      onTap: () =>
+                          _push(context, DonationDetailScreen(donation: d)),
                       extras: [
                         Positioned(
                           right: 17,
@@ -530,7 +622,7 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
                         const Positioned(
                           right: 10,
                           top: 63,
-                          child: Icon(Icons.chevron_right,
+                          child: AppIcon(Icons.chevron_right,
                               size: 24, color: AppColors.green),
                         ),
                       ],
@@ -546,8 +638,39 @@ class _ReceiveScreenState extends State<ReceiveScreen> {
 }
 
 // ---------------------------------------------- 07 Detalhe da doação
-class DonationDetailScreen extends StatelessWidget {
-  const DonationDetailScreen({super.key});
+class DonationDetailScreen extends StatefulWidget {
+  /// Doação exibida (padrão: a primeira, que é a do Figma).
+  final Donation? donation;
+  const DonationDetailScreen({super.key, this.donation});
+
+  @override
+  State<DonationDetailScreen> createState() => _DonationDetailScreenState();
+}
+
+class _DonationDetailScreenState extends State<DonationDetailScreen> {
+  bool _favorite = false;
+
+  Donation get d => widget.donation ?? nearbyDonations.first;
+
+  Future<void> _request() async {
+    final ok = await showAppDialog(
+      context,
+      title: 'Solicitar doação?',
+      message: 'Vamos avisar ${d.place} que você quer retirar '
+          '"${d.title}" (${d.kg} kg). ${d.window}.',
+      confirm: 'Solicitar',
+    );
+    if (ok && mounted) _push(context, const TrackScreen());
+  }
+
+  /// Etiqueta com a largura mínima do Figma, mas que cresce com o texto.
+  Widget _tag(String text, double minWidth, {TagKind kind = TagKind.green}) =>
+      IntrinsicWidth(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: minWidth),
+          child: AppTag(text, kind: kind, height: 24, fontSize: 12, hPad: 10),
+        ),
+      );
 
   Widget _row(double iconTop, double titleTop, double subTop, IconData icon,
       Color color, String title, String sub) {
@@ -555,7 +678,7 @@ class DonationDetailScreen extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Positioned(
-            left: 20, top: iconTop, child: Icon(icon, color: color, size: 22)),
+            left: 20, top: iconTop, child: AppIcon(icon, color: color, size: 22)),
         Positioned(
           left: 53,
           top: titleTop,
@@ -613,7 +736,7 @@ class DonationDetailScreen extends StatelessWidget {
                     top: 77 + o,
                     child: RoundIconButton(
                       icon: Icons.chevron_left,
-                      iconSize: 26,
+                      iconSize: 22,
                       bg: Colors.white,
                       fg: AppColors.primary,
                       onTap: () => Navigator.maybePop(context),
@@ -622,10 +745,19 @@ class DonationDetailScreen extends StatelessWidget {
                   Positioned(
                     right: 21,
                     top: 77 + o,
-                    child: const RoundIconButton(
-                      icon: Icons.favorite_border,
-                      bg: Colors.white,
-                      fg: AppColors.primary,
+                    child: Semantics(
+                      label: _favorite
+                          ? 'Remover dos favoritos'
+                          : 'Adicionar aos favoritos',
+                      child: RoundIconButton(
+                        icon: _favorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        iconSize: AppDimensions.iconSm,
+                        bg: Colors.white,
+                        fg: _favorite ? AppColors.red : AppColors.primary,
+                        onTap: () => setState(() => _favorite = !_favorite),
+                      ),
                     ),
                   ),
                   Positioned(
@@ -662,24 +794,17 @@ class DonationDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Cesta de hortaliças',
-                      style: TextStyle(
+                  Text(d.title,
+                      style: const TextStyle(
                           fontSize: 21,
                           height: 1.2,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primary)),
                   const SizedBox(height: 8.9),
-                  const Row(children: [
-                    AppTag('Vence em 2 dias',
-                        kind: TagKind.orange,
-                        height: 24,
-                        width: 96,
-                        fontSize: 12,
-                        hPad: 4),
-                    SizedBox(width: 8),
-                    AppTag('8 kg', height: 24, width: 62, fontSize: 12),
-                    SizedBox(width: 8),
-                    AppTag('Hortifruti', height: 24, width: 78, fontSize: 12),
+                  Wrap(spacing: 8, runSpacing: 6, children: [
+                    _tag(d.expiry, 96, kind: d.expiryKind),
+                    _tag('${d.kg} kg', 62),
+                    _tag(d.category, 78),
                   ]),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -698,49 +823,60 @@ class DonationDetailScreen extends StatelessWidget {
                                 bg: AppColors.light,
                                 fg: AppColors.primary),
                           ),
-                          const Positioned(
+                          Positioned(
                             left: 77,
                             top: 23,
-                            child: Text('Hortifruti Bom Preço',
-                                style: TextStyle(
+                            right: 60,
+                            child: Text(d.place,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
                                     fontSize: 14.5,
                                     height: 1.3,
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.ink)),
                           ),
-                          const Positioned(
+                          Positioned(
                             left: 77,
                             top: 45,
-                            child: Text('Doador desde 2024 · 38 doações',
-                                style: TextStyle(
+                            child: Text(
+                                'Doador desde ${d.donorSince} · '
+                                '${d.donorCount} doações',
+                                style: const TextStyle(
                                     fontSize: 11,
                                     height: 1.3,
                                     color: AppColors.muted)),
                           ),
-                          const Positioned(
+                          Positioned(
                             left: 77,
                             top: 61,
                             child: Row(children: [
-                              Icon(Icons.star,
+                              const AppIcon(Icons.star,
                                   size: 14, color: AppColors.orange),
-                              SizedBox(width: 4),
-                              Text('4,9',
-                                  style: TextStyle(
+                              const SizedBox(width: 4),
+                              Text(d.rating,
+                                  style: const TextStyle(
                                       fontSize: 12,
                                       height: 1.3,
                                       fontWeight: FontWeight.w800,
                                       color: AppColors.ink)),
                             ]),
                           ),
-                          const Positioned(
+                          Positioned(
                             right: 15,
                             top: 25,
-                            child: IconCircle(
-                                icon: Icons.chat_bubble_outline,
-                                size: 36,
-                                iconSize: 18,
-                                bg: AppColors.pale,
-                                fg: AppColors.primary),
+                            child: Semantics(
+                              button: true,
+                              label: 'Conversar com ${d.place}',
+                              child: GestureDetector(
+                                onTap: () => goToTab(context, 2),
+                                child: const IconCircle(
+                                    icon: Icons.chat_bubble_outline,
+                                    size: 36,
+                                    iconSize: 18,
+                                    bg: AppColors.pale,
+                                    fg: AppColors.primary),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -756,8 +892,8 @@ class DonationDetailScreen extends StatelessWidget {
                       child: Stack(
                         children: [
                           _row(13, 15.9, 34.9, Icons.location_on_outlined,
-                              AppColors.green, 'Rua das Palmeiras, 340 · Centro',
-                              '1,2 km de você'),
+                              AppColors.green, d.address,
+                              '${d.distance} de você'),
                           const Positioned(
                             left: 19,
                             right: 19,
@@ -765,8 +901,7 @@ class DonationDetailScreen extends StatelessWidget {
                             child: Divider(height: 1, color: AppColors.border),
                           ),
                           _row(73, 75.9, 94.9, Icons.schedule, AppColors.green,
-                              'Hoje, das 14h às 18h',
-                              'Leve sacola ou caixa própria'),
+                              d.window, d.note),
                         ],
                       ),
                     ),
@@ -774,14 +909,16 @@ class DonationDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   const SectionTitle('O que vem na cesta'),
                   const SizedBox(height: 12.5),
-                  const SizedBox(
+                  SizedBox(
                     height: 54,
                     child: AppCard(
-                      padding: EdgeInsets.symmetric(horizontal: 19),
+                      padding: const EdgeInsets.symmetric(horizontal: 19),
                       child: Align(
                         alignment: Alignment.centerLeft,
-                        child: Text('Alface, tomate, cenoura, abobrinha e couve.',
-                            style: TextStyle(
+                        child: Text(d.contents,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
                                 fontSize: 12.5, color: AppColors.muted)),
                       ),
                     ),
@@ -791,7 +928,7 @@ class DonationDetailScreen extends StatelessWidget {
                     label: 'Solicitar esta doação',
                     icon: Icons.check_circle_outline,
                     height: 54,
-                    onPressed: () => _push(context, const TrackScreen()),
+                    onPressed: _request,
                   ),
                 ],
               ),
@@ -868,7 +1005,7 @@ class TrackScreen extends StatelessWidget {
               border:
                   state == 0 ? Border.all(color: AppColors.border, width: 2) : null,
             ),
-            child: Icon(s.$1,
+            child: AppIcon(s.$1,
                 size: 17, color: state == 0 ? AppColors.hint : Colors.white),
           ),
         ),
@@ -920,16 +1057,18 @@ class TrackScreen extends StatelessWidget {
                   title: 'Acompanhar doação',
                   height: 101,
                   rowCenter: 53,
-                  trailing: RoundIconButton(icon: Icons.chat_bubble_outline),
+                  trailing: RoundIconButton(
+                      icon: Icons.chat_bubble_outline,
+                      iconSize: AppDimensions.iconSm),
                 ),
                 Positioned(
                   left: 24,
                   right: 24,
                   top: 124 + o,
                   height: 108,
-                  child: AppCard(
+                  child: const AppCard(
                     padding: EdgeInsets.zero,
-                    child: const Stack(
+                    child: Stack(
                       children: [
                         Positioned(
                             left: 17, top: 17, child: FoodThumb(size: 72)),
@@ -999,11 +1138,11 @@ class TrackScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                SizedBox(
+                const SizedBox(
                   height: 88,
                   child: AppCard(
                     padding: EdgeInsets.zero,
-                    child: const Stack(
+                    child: Stack(
                       children: [
                         Positioned(
                           left: 19,
@@ -1046,7 +1185,7 @@ class TrackScreen extends StatelessWidget {
                         Positioned(
                           right: 11,
                           top: 32,
-                          child: Icon(Icons.chevron_right,
+                          child: AppIcon(Icons.chevron_right,
                               size: 22, color: AppColors.primary),
                         ),
                       ],
@@ -1151,7 +1290,7 @@ class _MyDonationsScreenState extends State<MyDonationsScreen> {
                     const Positioned(
                       left: 22,
                       top: 20,
-                      child: Icon(Icons.eco_outlined,
+                      child: AppIcon(Icons.eco_outlined,
                           size: 20, color: AppColors.green),
                     ),
                     const Positioned(

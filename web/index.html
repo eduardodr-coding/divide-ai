@@ -18,29 +18,125 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Doação e recebimento de alimentos. Menos desperdício, mais propósito.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="divide_ai">
+  <meta name="apple-mobile-web-app-title" content="divide aí">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>divide_ai</title>
+  <title>divide aí</title>
   <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#fdf6ec">
+
+  <!-- Abertura (splash.html): aparece enquanto o Flutter carrega. -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #e9e4da; }
+    #splash {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; justify-content: center; align-items: center;
+      background: #e9e4da;
+      transition: opacity .4s ease, visibility .4s;
+    }
+    #splash.hide { opacity: 0; visibility: hidden; }
+    #splash .app {
+      position: relative; overflow: hidden;
+      width: 100%; max-width: 390px; height: 100dvh; max-height: 844px;
+      background: #fdf6ec;
+      display: grid; place-items: center;
+    }
+    @media (min-width: 440px) {
+      #splash .app { border-radius: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.18); }
+    }
+    #splash.hide .splash-logo { transform: scale(1.12); transition: transform .4s ease; }
+
+    #splash .glow {
+      position: absolute; width: 420px; height: 420px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(240,140,53,.22), rgba(170,211,161,.18) 45%, transparent 70%);
+      opacity: 0; transform: scale(.4);
+      animation: splash-glow .7s ease-out .03s forwards;
+    }
+    #splash .ring {
+      position: absolute; width: 180px; height: 180px; border-radius: 50%;
+      border: 2px solid rgba(60,138,69,.35); opacity: 0; transform: scale(.3);
+      animation: splash-ring .8s ease-out forwards;
+    }
+    #splash .r1 { animation-delay: .13s; }
+    #splash .r2 { animation-delay: .33s; }
+
+    #splash .splash-logo { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; width: 72%; }
+    #splash .splash-logo img { display: block; height: auto; }
+    #splash .l-icon { width: 46%; }
+    #splash .l-word { width: 100%; }
+    #splash .l-tag { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+    #splash .l-tag img:first-child { width: 69%; }
+    #splash .l-tag img:last-child { width: 56%; }
+
+    #splash .l-icon {
+      opacity: 0; transform: scale(.2) rotate(-25deg); transform-origin: 50% 55%;
+      animation: splash-icon .45s cubic-bezier(.34,1.56,.64,1) .1s forwards,
+                 splash-float 1.6s ease-in-out .6s infinite;
+    }
+    #splash .l-word {
+      opacity: 0; clip-path: inset(0 100% 0 0); transform: translateY(16px);
+      animation: splash-word .4s cubic-bezier(.2,.8,.2,1) .4s forwards;
+    }
+    #splash .l-tag {
+      opacity: 0; transform: translateY(14px);
+      animation: splash-tag .33s ease-out .65s forwards;
+    }
+
+    @keyframes splash-icon  { 60% { opacity: 1; } to { opacity: 1; transform: scale(1) rotate(0); } }
+    @keyframes splash-float { 50% { transform: translateY(-6px) scale(1.02); } }
+    @keyframes splash-word  { to { opacity: 1; clip-path: inset(0 0 0 0); transform: none; } }
+    @keyframes splash-tag   { to { opacity: 1; transform: none; } }
+    @keyframes splash-glow  { to { opacity: 1; transform: scale(1); } }
+    @keyframes splash-ring  { 20% { opacity: .8; } to { opacity: 0; transform: scale(3.2); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      #splash *, #splash { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; }
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <section id="splash" role="img" aria-label="divide aí: menos desperdício, mais propósito.">
+    <div class="app">
+      <div class="glow"></div>
+      <div class="ring r1"></div><div class="ring r2"></div>
+      <div class="splash-logo">
+        <img class="l-icon" src="splash/icone.png" alt="" />
+        <img class="l-word" src="splash/nome.png" alt="" />
+        <div class="l-tag">
+          <img src="splash/slogan-1.png" alt="" />
+          <img src="splash/slogan-2.png" alt="" />
+        </div>
+      </div>
+    </div>
+  </section>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <script>
+    // A abertura some quando as duas coisas acontecem: a animação terminou
+    // (1,4 s, como no splash.html) e o Flutter desenhou o primeiro quadro.
+    (function () {
+      var SPLASH_MS = 1400;
+      var animationDone = false, appReady = false;
+      function hide() {
+        if (!animationDone || !appReady) return;
+        var splash = document.getElementById('splash');
+        if (!splash) return;
+        splash.classList.add('hide');
+        setTimeout(function () { splash.remove(); }, 450);
+      }
+      setTimeout(function () { animationDone = true; hide(); }, SPLASH_MS);
+      window.addEventListener('flutter-first-frame', function () {
+        appReady = true; hide();
+      });
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

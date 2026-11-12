@@ -85,8 +85,87 @@ class _LoginHeroPainter extends CustomPainter {
 }
 
 // ---------------------------------------------------------------- 01 Login
-class LoginScreen extends StatelessWidget {
+final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+String? validateEmail(String v) {
+  if (v.trim().isEmpty) return 'Informe seu e-mail';
+  if (!_emailPattern.hasMatch(v.trim())) return 'E-mail inválido';
+  return null;
+}
+
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _email = TextEditingController();
+  final _password = TextEditingController(text: 'senha123');
+  String? _emailError, _passwordError;
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _emailError = validateEmail(_email.text);
+      _passwordError =
+          _password.text.isEmpty ? 'Informe sua senha' : null;
+    });
+    if (_emailError != null || _passwordError != null) return;
+    setState(() => _loading = true);
+    // Protótipo: sem backend ainda, simula a autenticação.
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (mounted) _enterApp(context);
+  }
+
+  void _forgotPassword() {
+    final controller = TextEditingController(text: _email.text);
+    showAppSheet<void>(
+      context,
+      title: 'Recuperar senha',
+      builder: (sheet) {
+        String? error;
+        return StatefulBuilder(
+          builder: (sheet, setSheet) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                  'Enviaremos um link para você criar uma nova senha.',
+                  style: AppTypography.caption),
+              const SizedBox(height: AppSpacing.lg),
+              AppField(
+                label: 'E-mail',
+                hint: 'maria@email.com',
+                icon: Icons.mail_outline,
+                controller: controller,
+                keyboard: TextInputType.emailAddress,
+                errorText: error,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              PrimaryButton(
+                label: 'Enviar link',
+                onPressed: () {
+                  final e = validateEmail(controller.text);
+                  if (e != null) return setSheet(() => error = e);
+                  Navigator.pop(sheet);
+                  showAppSnack(context,
+                      'Link enviado para ${controller.text.trim()}');
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    ).whenComplete(controller.dispose);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,22 +178,38 @@ class LoginScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    height: 262,
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: AppColors.light,
-                      borderRadius:
-                          BorderRadius.vertical(bottom: Radius.circular(28)),
-                    ),
-                    child: CustomPaint(painter: _LoginHeroPainter()),
+                  Column(
+                    children: [
+                      Container(
+                        height: 262,
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          color: AppColors.light,
+                          borderRadius: BorderRadius.vertical(
+                              bottom: Radius.circular(28)),
+                        ),
+                        child: CustomPaint(painter: _LoginHeroPainter()),
+                      ),
+                      // Figma: "logo-divide-ai", 326 x 137, 24 abaixo do topo.
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: Image.asset(
+                          'assets/brand/logo-completa.png',
+                          width: 326,
+                          height: 137,
+                          fit: BoxFit.contain,
+                          semanticLabel:
+                              'divide aí: menos desperdício, mais propósito',
+                        ),
+                      ),
+                    ],
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const AppField(
+                        AppField(
                           label: 'E-mail',
                           hint: 'maria@email.com',
                           icon: Icons.person_outline,
@@ -123,20 +218,35 @@ class LoginScreen extends StatelessWidget {
                           textLeft: 24,
                           height: 54,
                           keyboard: TextInputType.emailAddress,
+                          action: TextInputAction.next,
+                          controller: _email,
+                          errorText: _emailError,
+                          onChanged: (_) {
+                            if (_emailError != null) {
+                              setState(() => _emailError = null);
+                            }
+                          },
                         ),
                         const SizedBox(height: 15.5),
-                        const AppField(
+                        AppField(
                           label: 'Senha',
-                          initial: 'senha123',
                           password: true,
                           textLeft: 24,
                           height: 54,
+                          action: TextInputAction.done,
+                          controller: _password,
+                          errorText: _passwordError,
+                          onChanged: (_) {
+                            if (_passwordError != null) {
+                              setState(() => _passwordError = null);
+                            }
+                          },
                         ),
                         const SizedBox(height: 15.5),
                         Align(
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
-                            onTap: () {},
+                            onTap: _forgotPassword,
                             child: const Text('Esqueci minha senha',
                                 style: TextStyle(
                                     color: AppColors.orange,
@@ -148,7 +258,8 @@ class LoginScreen extends StatelessWidget {
                         const SizedBox(height: 18.5),
                         PrimaryButton(
                             label: 'Entrar',
-                            onPressed: () => _enterApp(context)),
+                            loading: _loading,
+                            onPressed: _submit),
                         const SizedBox(height: 9.5),
                         OutlineAppButton(
                           label: 'Criar conta',
@@ -182,6 +293,47 @@ class CreateAccountScreen extends StatefulWidget {
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _donor = true;
   bool _accepted = false;
+  bool _loading = false;
+  final _name = TextEditingController(text: 'Maria Nascimento');
+  final _email = TextEditingController(text: 'maria@email.com');
+  final _document = TextEditingController();
+  final _password = TextEditingController();
+  final _errors = <String, String?>{};
+
+  @override
+  void dispose() {
+    for (final c in [_name, _email, _document, _password]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _clear(String field) {
+    if (_errors[field] != null) setState(() => _errors[field] = null);
+  }
+
+  Future<void> _submit() async {
+    final digits = _document.text.replaceAll(RegExp(r'\D'), '');
+    setState(() {
+      _errors['name'] = _name.text.trim().split(RegExp(r'\s+')).length < 2
+          ? 'Informe nome e sobrenome'
+          : null;
+      _errors['email'] = validateEmail(_email.text);
+      _errors['document'] = digits.length == 11 || digits.length == 14
+          ? null
+          : 'CPF tem 11 dígitos e CNPJ tem 14';
+      _errors['password'] =
+          _password.text.length < 8 ? 'A senha precisa de 8 caracteres' : null;
+    });
+    if (_errors.values.any((e) => e != null)) return;
+    if (!_accepted) {
+      showAppSnack(context, 'Aceite os Termos de uso para continuar');
+      return;
+    }
+    setState(() => _loading = true);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (mounted) _enterApp(context);
+  }
 
   Widget _roleCard({
     required bool selected,
@@ -223,7 +375,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   child: CircleAvatar(
                     radius: 11,
                     backgroundColor: AppColors.primary,
-                    child: Icon(Icons.check, size: 15, color: Colors.white),
+                    child: AppIcon(Icons.check, size: 15, color: Colors.white),
                   ),
                 ),
               Positioned(
@@ -299,28 +451,42 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  const AppField(
+                  AppField(
                       label: 'Nome completo',
-                      initial: 'Maria Nascimento',
-                      icon: Icons.person_outline),
+                      icon: Icons.person_outline,
+                      controller: _name,
+                      action: TextInputAction.next,
+                      errorText: _errors['name'],
+                      onChanged: (_) => _clear('name')),
                   const SizedBox(height: 6),
-                  const AppField(
+                  AppField(
                       label: 'E-mail',
-                      initial: 'maria@email.com',
                       icon: Icons.mail_outline,
-                      keyboard: TextInputType.emailAddress),
+                      keyboard: TextInputType.emailAddress,
+                      controller: _email,
+                      action: TextInputAction.next,
+                      errorText: _errors['email'],
+                      onChanged: (_) => _clear('email')),
                   const SizedBox(height: 6),
-                  const AppField(
+                  AppField(
                       label: 'CPF ou CNPJ',
                       hint: '000.000.000-00',
                       icon: Icons.assignment_outlined,
-                      keyboard: TextInputType.number),
+                      keyboard: TextInputType.number,
+                      controller: _document,
+                      action: TextInputAction.next,
+                      errorText: _errors['document'],
+                      onChanged: (_) => _clear('document')),
                   const SizedBox(height: 6),
-                  const AppField(
+                  AppField(
                       label: 'Senha',
                       hint: 'mínimo 8 caracteres',
                       icon: Icons.shield_outlined,
-                      password: true),
+                      password: true,
+                      controller: _password,
+                      action: TextInputAction.done,
+                      errorText: _errors['password'],
+                      onChanged: (_) => _clear('password')),
                   const SizedBox(height: 21.5),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,7 +510,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                   width: 2),
                             ),
                             child: _accepted
-                                ? const Icon(Icons.check,
+                                ? const AppIcon(Icons.check,
                                     size: 14, color: Colors.white)
                                 : null,
                           ),
@@ -371,7 +537,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   const SizedBox(height: 26.5),
                   PrimaryButton(
                     label: 'Criar minha conta',
-                    onPressed: _accepted ? () => _enterApp(context) : null,
+                    loading: _loading,
+                    onPressed: _submit,
                   ),
                   const SizedBox(height: 13),
                   Row(
