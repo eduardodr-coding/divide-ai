@@ -18,8 +18,8 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   static const _bg = Color(0xFFFDF6EC);
-  // Entrada em 0,7 s + fade de 0,3 s: no máximo 1 s, como na web.
-  static const _total = Duration(milliseconds: 700);
+  // Entrada em 1,2 s + fade de 0,3 s: 1,5 s no total, como na web.
+  static const _total = Duration(milliseconds: 1200);
 
   late final _intro = AnimationController(vsync: this, duration: _total)
     ..forward().whenComplete(_goToLogin);
@@ -27,11 +27,11 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this, duration: const Duration(milliseconds: 1600))
     ..repeat();
 
-  /// Intervalo [start, end] (em segundos) da linha do tempo de 1,4 s.
+  /// Intervalo [start, end] em segundos, na linha do tempo de 1,2 s.
   Animation<double> _at(double start, double end, Curve curve) =>
       CurvedAnimation(
         parent: _intro,
-        curve: Interval(start / 1.4, math.min(end / 1.4, 1), curve: curve),
+        curve: Interval(start / 1.2, math.min(end / 1.2, 1), curve: curve),
       );
 
   late final _glow = _at(.03, .73, Curves.easeOut);
