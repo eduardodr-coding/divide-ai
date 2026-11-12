@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'auth_screens.dart';
 
-/// Abertura do app (mesma animação de `splash.html`, ~1,4 s).
+/// Abertura do app (animação de `splash.html` em 1 s no total).
 ///
 /// Na web a abertura é o HTML em `web/index.html`, que aparece enquanto o
 /// Flutter carrega; esta tela é usada nas plataformas nativas.
@@ -18,7 +18,8 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   static const _bg = Color(0xFFFDF6EC);
-  static const _total = Duration(milliseconds: 1400);
+  // Entrada em 0,7 s + fade de 0,3 s: no máximo 1 s, como na web.
+  static const _total = Duration(milliseconds: 700);
 
   late final _intro = AnimationController(vsync: this, duration: _total)
     ..forward().whenComplete(_goToLogin);
@@ -43,7 +44,7 @@ class _SplashScreenState extends State<SplashScreen>
   void _goToLogin() {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (_, __, ___) => const LoginScreen(),
       transitionsBuilder: (_, a, __, child) =>
           FadeTransition(opacity: a, child: child),
